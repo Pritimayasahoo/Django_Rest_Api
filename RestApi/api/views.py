@@ -1,13 +1,18 @@
 from django.shortcuts import render
 from .models import Student
 from .serializers import Studentserializer
-from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.csrf import csrf_protect
 from django.http import HttpResponse, JsonResponse
 from rest_framework.renderers import JSONRenderer
 from rest_framework.parsers import JSONParser
+from django.middleware.csrf import get_token
 # Create your views here.
 
-@csrf_exempt
+def get_csrf_token(request):
+    csrf_token = get_token(request)
+    return JsonResponse({'csrfToken': csrf_token})
+
+@csrf_protect
 def studentapi(request,pk):
     student=Student.objects.get(pk=pk)
     if request.method == 'GET':
