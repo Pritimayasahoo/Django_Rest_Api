@@ -55,7 +55,22 @@ MIDDLEWARE = [
 
 REST_FRAMEWORK= {'DEFAULT_PERMISSION_CLASSES':['rest_framework.permissions.AllowAny']}
 CORS_ALLOW_ALL_ORIGINS = True
+
+# Set CSRF_COOKIE_SECURE based on the environment
+if os.getenv('DJANGO_ENV') == 'production':
+    CSRF_COOKIE_SECURE = True
+else:
+    CSRF_COOKIE_SECURE = False
+    
+CSRF_TRUSTED_ORIGINS = [
+    'https://django-rest-api-kfso.onrender.com',
+    'http://localhost',
+    'http://10.0.2.2',
+    'http://192.168.137.1',  # If testing on a real device over the local network
+]
+
 CORS_ALLOW_CREDENTIALS = True
+
 CORS_ALLOW_HEADERS = [
     'access-control-allow-origin',
     'content-type',
