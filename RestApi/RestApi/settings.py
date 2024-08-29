@@ -55,7 +55,7 @@ MIDDLEWARE = [
 
 REST_FRAMEWORK= {'DEFAULT_PERMISSION_CLASSES':['rest_framework.permissions.AllowAny']}
 CORS_ALLOW_ALL_ORIGINS = True
-
+CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_HEADERS = [
     'access-control-allow-origin',
     'content-type',
