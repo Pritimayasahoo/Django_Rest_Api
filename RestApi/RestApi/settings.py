@@ -29,6 +29,7 @@ DEBUG = True
 
 ALLOWED_HOSTS = ["*"]
 
+AUTH_USER_MODEL = 'api.CustomUser'
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -114,7 +115,7 @@ DATABASES = {
     }
 }
 
-DATABASES['default'] = dj_database_url.parse("postgresql://pritimaya:hfYaSEHmVLRAra8Y7oM3jB7XOqtc5JUL@dpg-cr7ul43qf0us73blla5g-a.singapore-postgres.render.com/api_test_0buo")
+DATABASES['default'] = dj_database_url.parse("postgresql://reat_api_user:QyKbtswwsgqUwdCVlhHO2KBmfHMyA3xz@dpg-cr9tjtggph6c73d60vfg-a.singapore-postgres.render.com/reat_api")
 
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
