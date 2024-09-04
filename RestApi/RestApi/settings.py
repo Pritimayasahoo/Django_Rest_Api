@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'api',
     'rest_framework',
+    'rest_framework_simplejwt.token_blacklist',
     'corsheaders'
 ]
 
@@ -55,6 +56,8 @@ MIDDLEWARE = [
 ]
 
 REST_FRAMEWORK= {'DEFAULT_PERMISSION_CLASSES':['rest_framework.permissions.AllowAny']}
+
+
 CORS_ALLOW_ALL_ORIGINS = True
 
 # Set CSRF_COOKIE_SECURE based on the environment

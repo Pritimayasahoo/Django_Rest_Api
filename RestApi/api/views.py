@@ -1,16 +1,58 @@
 from django.shortcuts import render
-from .models import Student
+from .models import Student,CustomUser
 from .serializers import Studentserializer
 from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse, JsonResponse
 from rest_framework.renderers import JSONRenderer
 from rest_framework.parsers import JSONParser
 from django.middleware.csrf import get_token
+from rest_framework_simplejwt.tokens import RefreshToken
+
 # Create your views here.
 
 def get_csrf_token(request):
     csrf_token = get_token(request)
     return JsonResponse({'csrfToken': csrf_token})
+
+
+@csrf_exempt
+def signup_view(request):
+    if request.method == "POST":
+        try:
+            data = JSONParser().parse(request)  # Parse the JSON body
+            print(data,"comes...")
+            email = data.get("email")
+            password = data.get("password")
+
+            if not email or not password:
+                return JsonResponse({"error": "Email and password are required"}, status=400)
+
+            # Check if user already exists
+            if CustomUser.objects.filter(email=email).exists():
+                return JsonResponse({"error": "User already exists"}, status=400)
+
+            # Create new user
+            user = CustomUser.objects.create(
+                email=email,
+                password=password  # Hash the password
+            )
+
+            # Generate JWT tokens for the new user
+            refresh = RefreshToken.for_user(user)
+
+            response_data = {
+                'refresh': str(refresh),
+                'access': str(refresh.access_token),
+            }
+
+            return JsonResponse(response_data, status=201)
+
+        except:
+            return JsonResponse({"error": "Invalid JSON"}, status=400)
+
+    return HttpResponse(status=405)  # Method not allowed for non-POST requests
+
+
 
 @csrf_exempt
 def studentapi(request,pk):
