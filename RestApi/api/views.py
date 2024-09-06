@@ -9,6 +9,8 @@ from django.middleware.csrf import get_token
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth.hashers import check_password
 import random
+import requests
+import json
 
 # Create your views here.
 
@@ -76,6 +78,29 @@ def login_view(request):
     return HttpResponse(status=405)  # Method not allowed for non-POST requests
 
 
+# OTP Template For Forgot OTP
+def Forgot_otp(name, email, otp):
+    url = "https://control.msg91.com/api/v5/email/send"
+    payload = {
+        'to': [{'name': name, 'email': email}],
+        'from': {'name': 'pritimaya', 'email': 'support@clasoc.com'},
+        'variables': {'name': name, 'OTP': otp},
+        'domain': 'clasoc.com',
+        'template_id': 'template_forgot_password'
+    }
+    payload = json.dumps(payload)
+    headers = {
+        "Content-Type": "application/JSON",
+        "Accept": "application/json",
+        "authkey": "396373AC78f3NtG6492a1a7P1"
+    }
+    response = requests.post(url, data=payload, headers=headers)
+    if response.status_code == 200:
+        return True
+    else:
+        return False
+
+
 @csrf_exempt
 def forgotpassword(request):
     if request.method=='POST':
@@ -84,15 +109,11 @@ def forgotpassword(request):
         user=CustomUser.objects.filter(email=email).first()
         if user:
             otp=random.randint(100000,999999)
-            #otp_object=OTP.objects.filter(email=email).first()
-            #otp_object.otp=otp
-            #otp_object.save()
-            #send_otp('chiku',email,otp)
+            Forgot_otp('chiku',email,otp)
             return JsonResponse({"sucess": f"OTP:-{otp} "}, status=200)
         else:
            return JsonResponse({"error": "Invalid credentials"}, status=401)
-    return HttpResponse(status=405)
-   
+    return HttpResponse(status=405)   
 
 @csrf_exempt
 def studentapi(request,pk):
