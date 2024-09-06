@@ -8,7 +8,7 @@ from rest_framework.parsers import JSONParser
 from django.middleware.csrf import get_token
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth.hashers import check_password
-
+import random
 
 # Create your views here.
 
@@ -75,6 +75,24 @@ def login_view(request):
             return JsonResponse({"error": f"{e} this is the issue"}, status=400)
     return HttpResponse(status=405)  # Method not allowed for non-POST requests
 
+
+@csrf_exempt
+def forgotpassword(request):
+    if request.method=='POST':
+        data = data = JSONParser().parse(request)  # Parse the JSON body
+        email = data.get("email")
+        user=CustomUser.objects.filter(email=email).first()
+        if user:
+            otp=random.randint(100000,999999)
+            #otp_object=OTP.objects.filter(email=email).first()
+            #otp_object.otp=otp
+            #otp_object.save()
+            #send_otp('chiku',email,otp)
+            return JsonResponse({"sucess": f"OTP:-{otp} "}, status=200)
+        else:
+           return JsonResponse({"error": "Invalid credentials"}, status=401)
+    return HttpResponse(status=405)
+   
 
 @csrf_exempt
 def studentapi(request,pk):
