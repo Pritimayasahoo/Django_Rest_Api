@@ -1,6 +1,8 @@
 #use it for normalize email
 import email.utils as email_utils
 from django.contrib.auth.models import BaseUserManager
+from django.contrib.auth.hashers import make_password
+
 
 #use BaseUserManager to modify the default admin model
 class CustomUserManager(BaseUserManager):
@@ -9,7 +11,7 @@ class CustomUserManager(BaseUserManager):
 
 
     """Create and save a User with the given email and password."""
-    def create_user(self, email, password=None, **extra_fields):
+    def create_user(self, email, password, **extra_fields):
         if not email:
             raise ValueError('Email must required')
         
