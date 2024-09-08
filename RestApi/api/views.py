@@ -110,8 +110,11 @@ def forgotpassword(request):
         user=CustomUser.objects.filter(email=email).first()
         if user:
             otp=random.randint(100000,999999)
+            otp_object=OTP.objects.filter(email=email).first()
+            otp_object.OTP=otp
+            otp_object.save()
             Forgot_otp('chiku',email,otp)
-            return JsonResponse({"sucess": f"OTP:-{otp} "}, status=200)
+            return JsonResponse({"sucess": "OTP send"}, status=200) if Forgot_otp('chiku',email,otp) else JsonResponse({"error": "Can't send OTP"}, status=401)
         else:
            return JsonResponse({"error": "Invalid credentials"}, status=401)
     return HttpResponse(status=405)   
