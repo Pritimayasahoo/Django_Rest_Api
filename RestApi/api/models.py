@@ -25,3 +25,14 @@ class Student(models.Model):
     
     def __str__(self) -> str:
         return self.name 
+
+class OTP(models.Model):
+    OTP=models.CharField(max_length=9)
+    email = models.EmailField(unique=True)
+    user=models.ForeignKey(CustomUser,on_delete=models.CASCADE,blank=True,null=True,default=None)
+    #for 3 time attempts 
+    failed_attempts = models.IntegerField(default=0)
+    locked_until = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return self.email 

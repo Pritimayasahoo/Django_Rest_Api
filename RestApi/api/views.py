@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from .models import Student,CustomUser
+from .models import Student,CustomUser,OTP
 from .serializers import Studentserializer
 from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse, JsonResponse
@@ -37,7 +37,8 @@ def signup_view(request):
                 email=email,
                 password=password  # Hash the password
             )
-
+            otp=random.randint(100000,999999)
+            OTP.objects.create(OTP=otp,email=email)
 
             # Generate JWT tokens for the new user
             refresh = RefreshToken.for_user(user)
@@ -114,6 +115,36 @@ def forgotpassword(request):
         else:
            return JsonResponse({"error": "Invalid credentials"}, status=401)
     return HttpResponse(status=405)   
+
+#forgot otp
+@csrf_exempt
+def forgot_otp_check(request):
+    if request.method=='POST':
+        data = data = JSONParser().parse(request)  # Parse the JSON body
+        email = data.get("email")
+        otp = data.get("OTP")
+        password = data.get("password")
+        otp_object=OTP.objects.filter(email=email).first()
+        if otp_object:
+            if otp_object.OTP==otp:
+                user=CustomUser.objects.filter(email=email).first()
+                user.set_password(password)
+                user.save()
+                otp_object.failed_attempts=0
+                otp_object.OTP=random.randint(100000,999999)
+                otp_object.save()
+                return JsonResponse({'Sucess':"password set up"}, status=201)
+            else:
+                otp_object.failed_attempts+=1
+                #reassign new otp after 3 failure attempt
+                if otp_object.failed_attempts>=3:
+                    otp_object.failed_attempts=0
+                    otp_object.otp=random.randint(100000,999999)
+                    otp_object.save()
+                otp_object.save()
+                return JsonResponse({"error": "Wrong OTP"}, status=401)
+    return HttpResponse(status=405)
+
 
 @csrf_exempt
 def studentapi(request,pk):
