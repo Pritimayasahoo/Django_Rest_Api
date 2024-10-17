@@ -1,15 +1,28 @@
 from django.urls import path
-from .views import studentapi,get_csrf_token,signup_view,login_view,forgotpassword,forgot_otp_check
+from . import views
 from rest_framework_simplejwt.views import TokenRefreshView,TokenVerifyView
 
 
 urlpatterns = [
-   path('csrf/',get_csrf_token),
-   path('student/<int:pk>',studentapi) ,
-   path('signup/', signup_view, name='signup'),
-   path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+   path('csrf/',views.get_csrf_token),
+   path('student/<int:pk>',views.studentapi) ,
+   path('signup/',views.signup_view, name='signup'),
+   path('token/refresh/',TokenRefreshView.as_view(), name='token_refresh'),
    path('token/verify/', TokenVerifyView.as_view(), name='token_verify'),
-   path('login/', login_view, name='login'),
-   path('passwordreset/',forgotpassword,name='forgotpassword'),
-   path('otpcheck/',forgot_otp_check,name='otpcheck')
+   path('login/',views.login_view, name='login'),
+   path('passwordreset/',views.forgotpassword,name='forgotpassword'),
+   path('otpcheck/',views.forgot_otp_check,name='otpcheck'),
+   path('profile/',views.create_profile,name='profile'),
+    path('view_profile/<str:name>',views.view_profile,name='post'),
+    path('follow/',views.Follow,name='follow'),
+    path('like/',views.like_check,name='like'),
+    path('search/',views.Search,name='search'),
+    path('prof/',views.Own_profile,name='own_profile'),
+    path('showcomment/<str:post_id>',views.Showcomment,name='showcomment'),
+    path('createcomment/',views.Createcomment,name='createcomment'),
+    path('save/',views.handle_compressed_image,name='save_post'),
+    path('editprof/',views.Own_edit_profile,name='own_edit_profile'),
+    path('deletepic/',views.Deletepic,name='Deletepic'),
+    path('forgot/',views.forgotpassword,name='forgot'),
+    path('forgot_otp/',views.forgot_otp_check,name='forgot_otp'),
 ]
