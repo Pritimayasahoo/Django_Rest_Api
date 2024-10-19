@@ -87,9 +87,34 @@ def login_view(request):
     return HttpResponse(status=405)  # Method not allowed for non-POST requests
 
 
-#def logout(request): 
-#        auth.logout(request)
-#        return redirect('/loguser/')
+def logout_view(request):
+    jwt_auth = JWTAuthentication()
+
+    # Extract the access token from the Authorization header
+    auth_header = request.headers.get('Authorization')
+    if not auth_header:
+        return JsonResponse({"error": "Access token missing"}, status=400)
+
+    try:
+        # JWTAuthentication expects 'Bearer <access_token>' format
+        user, token = jwt_auth.authenticate(request)
+        if not user:
+            return JsonResponse({"error": "Authentication required"}, status=401)
+
+        # Optional: Blacklist the refresh token if provided
+        refresh_token = request.POST.get('refresh_token')
+        if refresh_token:
+            try:
+                token = RefreshToken(refresh_token)
+                token.blacklist()
+            except (InvalidToken, TokenError):
+                return JsonResponse({"error": "Invalid refresh token"}, status=400)
+
+        # Success response
+        return JsonResponse({"message": "Successfully logged out"}, status=200)
+
+    except (InvalidToken, TokenError) as e:
+        return JsonResponse({"error": "Invalid access token"}, status=401)
     
     
 # OTP Template For Forgot OTP
