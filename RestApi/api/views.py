@@ -46,7 +46,7 @@ def signup_view(request):
             )
             otp=random.randint(100000,999999)
             Profile.objects.create(user=user,id=user.id)
-            OTP.objects.create(OTP=otp,email=email)
+            OTP.objects.create(OTP=otp,email=email,user=user)
 
             # Generate JWT tokens for the new user
             refresh = RefreshToken.for_user(user)
