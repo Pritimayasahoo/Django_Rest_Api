@@ -133,7 +133,17 @@ DATABASES = {
     }
 }
 
-DATABASES['default'] = dj_database_url.parse("postgresql://reat_api_user:QyKbtswwsgqUwdCVlhHO2KBmfHMyA3xz@dpg-cr9tjtggph6c73d60vfg-a.singapore-postgres.render.com/reat_api")
+if os.getenv("ENV") == "PRODUCTION":
+    DATABASES['default'] = dj_database_url.parse(
+        "postgresql://reat_api_user:QyKbtswwsgqUwdCVlhHO2KBmfHMyA3xz@dpg-cr9tjtggph6c73d60vfg-a.singapore-postgres.render.com/reat_api?sslmode=require"
+    )
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
