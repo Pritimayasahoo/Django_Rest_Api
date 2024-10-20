@@ -189,6 +189,7 @@ def forgot_otp_check(request):
 
 
 #Token verify
+@csrf_exempt
 def verify_token(request):
     token = request.data.get('token')
 
@@ -218,6 +219,7 @@ def verify_token(request):
     
 
 #refresh token
+@csrf_exempt
 def refresh_token(request):
     refresh_token_str = request.data.get('refresh')
 
