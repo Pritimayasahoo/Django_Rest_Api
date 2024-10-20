@@ -6,10 +6,10 @@ from django.http import HttpResponse, JsonResponse
 from rest_framework.renderers import JSONRenderer
 from rest_framework.parsers import JSONParser
 from django.middleware.csrf import get_token
-from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.tokens import AccessToken,RefreshToken
 from django.contrib.auth.hashers import check_password
 from rest_framework_simplejwt.authentication import JWTAuthentication
-from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
+from rest_framework_simplejwt.exceptions import InvalidToken, TokenError,InvalidToken
 from django.db.models import Q
 import random
 import requests
@@ -86,8 +86,9 @@ def login_view(request):
             return JsonResponse({"error": f"{e} this is the issue"}, status=400)
     return HttpResponse(status=405)  # Method not allowed for non-POST requests
 
-
+@csrf_exempt
 def logout_view(request):
+    print("view hwrw")
     jwt_auth = JWTAuthentication()
 
     # Extract the access token from the Authorization header
@@ -186,6 +187,59 @@ def forgot_otp_check(request):
                 return JsonResponse({"error": "Wrong OTP"}, status=401)
     return HttpResponse(status=405)
 
+
+#Token verify
+def verify_token(request):
+    token = request.data.get('token')
+
+    if not token:
+        return JsonResponse({"token_valid": False, "detail": "Token is missing"}, status=400)
+
+    try:
+        # Decode the token using SimpleJWT's AccessToken
+        access_token = AccessToken(token)
+
+        # Extract user ID from token
+        user_id = access_token['user_id']
+
+        # Check if the user exists and is not blocked
+        try:
+            user = CustomUser.objects.get(id=user_id)
+            if not user.is_active:  # You can modify this to check for your own 'blocked' condition
+                return JsonResponse({"token_valid": False, "detail": "User is blocked or inactive"}, status=401)
+
+            return JsonResponse({"token_valid": True, "user_id": user.id}, status=200)
+
+        except :
+            return JsonResponse({"token_valid": False, "detail": "User does not exist"}, status=401)
+
+    except InvalidToken as e:
+        return JsonResponse({"token_valid": False, "detail": str(e)}, status=401)
+    
+
+#refresh token
+def refresh_token(request):
+    refresh_token_str = request.data.get('refresh')
+
+    if not refresh_token_str:
+        return JsonResponse({"detail": "Refresh token is missing"}, status=400)
+
+    try:
+        # Validate the refresh token
+        refresh_token = RefreshToken(refresh_token_str)
+
+        # If the refresh token is valid, create new tokens
+        new_access_token = str(refresh_token.access_token)
+        new_refresh_token = str(refresh_token)
+
+        return JsonResponse({
+            "access": new_access_token,
+            "refresh": new_refresh_token
+        }, status=200)
+
+    except InvalidToken as e:
+        return JsonResponse({"detail": str(e)}, status=401)
+        
 
 @csrf_exempt
 def studentapi(request,pk):
