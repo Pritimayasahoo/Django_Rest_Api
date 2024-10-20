@@ -88,34 +88,38 @@ def login_view(request):
 
 @csrf_exempt
 def logout_view(request):
-    print("view hwrw")
-    jwt_auth = JWTAuthentication()
-
-    # Extract the access token from the Authorization header
-    auth_header = request.headers.get('Authorization')
-    if not auth_header:
-        return JsonResponse({"error": "Access token missing"}, status=400)
-
     try:
-        # JWTAuthentication expects 'Bearer <access_token>' format
-        user, token = jwt_auth.authenticate(request)
-        if not user:
-            return JsonResponse({"error": "Authentication required"}, status=401)
+        # Parse JSON request body
+        data = data = JSONParser().parse(request)  # Parse the JSON body
+        print(data,"this at 1st")
+        # Get access and refresh tokens from the request body
+        accesstoken = data.get("access_token")
+        refreshtoken = data.get("refresh_token")
+        if not accesstoken or not refreshtoken:
+            return JsonResponse({"error": "Tokens are required"}, status=400)
 
-        # Optional: Blacklist the refresh token if provided
-        refresh_token = request.POST.get('refresh_token')
-        if refresh_token:
-            try:
-                token = RefreshToken(refresh_token)
-                token.blacklist()
-            except (InvalidToken, TokenError):
-                return JsonResponse({"error": "Invalid refresh token"}, status=400)
+        # Step 1: Validate the Access Token
+        print(accesstoken,"this is acess", refreshtoken, "this is refresh" )
 
-        # Success response
-        return JsonResponse({"message": "Successfully logged out"}, status=200)
+        access_token = AccessToken(accesstoken)  # This will raise an error if the token is invalid
+        print(access_token,"this untill")
+        # Get the user associated with the access token
+        user_id = access_token['user_id']  # Assuming 'user_id' is in the token payload
+        print(f'User ID from token: {user_id}')
+        
+        #This will through error if user linked to the token delete before 
+        user = CustomUser.objects.get(id=user_id)
+        
+        # Step 2: Validate and blacklist the Refresh Token
+        refresh_token = RefreshToken(refreshtoken)  # Validate the refresh token
+        refresh_token.blacklist()  # Blacklist the refresh token (will only work if blacklist is enabled)
 
-    except (InvalidToken, TokenError) as e:
-        return JsonResponse({"error": "Invalid access token"}, status=401)
+        # If both tokens are valid, and refresh token is blacklisted, return success
+        return JsonResponse({"message": "Logout successful, refresh token blacklisted"}, status=200)
+
+    except :
+        return JsonResponse({"error": "Invalid token provided"}, status=401)
+    
     
     
 # OTP Template For Forgot OTP
@@ -144,7 +148,7 @@ def Forgot_otp(name, email, otp):
 @csrf_exempt
 def forgotpassword(request):
     if request.method=='POST':
-        data = data = JSONParser().parse(request)  # Parse the JSON body
+        data = JSONParser().parse(request)  # Parse the JSON body
         email = data.get("email")
         user=CustomUser.objects.filter(email=email).first()
         if user:
@@ -162,7 +166,7 @@ def forgotpassword(request):
 @csrf_exempt
 def forgot_otp_check(request):
     if request.method=='POST':
-        data = data = JSONParser().parse(request)  # Parse the JSON body
+        data = JSONParser().parse(request)  # Parse the JSON body
         email = data.get("email")
         otp = data.get("OTP")
         password = data.get("password")
@@ -191,37 +195,34 @@ def forgot_otp_check(request):
 #Token verify
 @csrf_exempt
 def verify_token(request):
-    token = request.data.get('token')
-
+    print("start")
+    data = JSONParser().parse(request)  # Parse the JSON body
+    token= data.get("token")
+    #token = request.GET['token']
+    print(token,"comes")
     if not token:
-        return JsonResponse({"token_valid": False, "detail": "Token is missing"}, status=400)
+        return JsonResponse({"token_valid": "Token is missing"}, status=400)
 
     try:
         # Decode the token using SimpleJWT's AccessToken
         access_token = AccessToken(token)
-
+        print(AccessToken,"tsis is acess ")
         # Extract user ID from token
         user_id = access_token['user_id']
+        
+        #This will through error if user linked to the token delete before 
+        user = CustomUser.objects.get(id=user_id)
+        return JsonResponse({"token_valid": True, "user_id": user.id}, status=200)
 
-        # Check if the user exists and is not blocked
-        try:
-            user = CustomUser.objects.get(id=user_id)
-            if not user.is_active:  # You can modify this to check for your own 'blocked' condition
-                return JsonResponse({"token_valid": False, "detail": "User is blocked or inactive"}, status=401)
-
-            return JsonResponse({"token_valid": True, "user_id": user.id}, status=200)
-
-        except :
-            return JsonResponse({"token_valid": False, "detail": "User does not exist"}, status=401)
-
-    except InvalidToken as e:
-        return JsonResponse({"token_valid": False, "detail": str(e)}, status=401)
+    except :
+        return JsonResponse({"Error":"invalid token"}, status=401)
     
 
 #refresh token
 @csrf_exempt
 def refresh_token(request):
-    refresh_token_str = request.data.get('refresh')
+    data = JSONParser().parse(request)  # Parse the JSON body
+    refresh_token_str= data.get("refresh")
 
     if not refresh_token_str:
         return JsonResponse({"detail": "Refresh token is missing"}, status=400)
@@ -229,6 +230,9 @@ def refresh_token(request):
     try:
         # Validate the refresh token
         refresh_token = RefreshToken(refresh_token_str)
+        user_id = refresh_token['user_id']
+        #This will through error if user linked to the token delete before 
+        user = CustomUser.objects.get(id=user_id)
 
         # If the refresh token is valid, create new tokens
         new_access_token = str(refresh_token.access_token)
