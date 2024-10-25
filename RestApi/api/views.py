@@ -237,6 +237,12 @@ def refresh_token(request):
         # If the refresh token is valid, create new tokens
         new_access_token = str(refresh_token.access_token)
         new_refresh_token = str(refresh_token)
+        
+        
+        #refresh = RefreshToken.for_user(user)
+        #new_access_token = str(refresh.access_token)
+        #new_refresh_token = str(refresh)
+
 
         return JsonResponse({
             "access": new_access_token,
@@ -375,29 +381,37 @@ def Follow(request):
         return JsonResponse({"error": "Invalid token"}, status=401)    
 
 def like_check(request):
-    jwt_auth = JWTAuthentication()
-
+    print("start")
+    data = JSONParser().parse(request)  # Parse the JSON body
+    token= data.get("token")
+    like_id= data.get("like_id")
+    if not token or not like_id:
+        return JsonResponse({"token_valid": "Token is missing"}, status=400)
+    #token = request.GET['token']
     try:
-        # This will check the Authorization header and validate the token
-        user, token = jwt_auth.authenticate(request)
-        if not user:
-            return JsonResponse({"error": "Authentication required"}, status=401)
-        like_id=request.GET.get('like_id')
+        access_token = AccessToken(token)
+        # Extract user ID from token
+        user_id = access_token['user_id']
+        
+        #This will through error if user linked to the token delete before 
+        user = CustomUser.objects.get(id=user_id)
+        
         current_post=Post.objects.filter(id=like_id).first()
         like=Like_post.objects.filter(post_id=like_id,like_user=user).first()
         if like:
             like.delete()
             current_post.no_of_like-=1
         else:
-            new_like=Like_post.objects.create(post_id=like_id,like_user=user)
+            new_like=Like_post.objects.create(post_id=like_id,linked_post=current_post,like_user=user)
             current_post.no_of_like+=1
         current_post.save()
         data = {
             'likes': current_post.no_of_like
         }
-        return JsonResponse(data, status=201)
-    except (InvalidToken, TokenError) as e:
-        return JsonResponse({"error": "Invalid token"}, status=401)
+        return JsonResponse(data,status=200)
+    except:
+        return JsonResponse({"Error":"invalid token"}, status=401)
+  
 
 #Add comments    
 def Showcomment(request,post_id):
@@ -545,22 +559,32 @@ def Deletepic(request):
     except (InvalidToken, TokenError) as e:
         return JsonResponse({"error": "Invalid token"}, status=401)    
 
+
 #handle compressed image
+@csrf_exempt
 def handle_compressed_image(request):
-    jwt_auth = JWTAuthentication()
-
     try:
-        # This will check the Authorization header and validate the token
-        user, token = jwt_auth.authenticate(request)
-        if not user:
-            return JsonResponse({"error": "Authentication required"}, status=401)
-        if request.method == "POST":
-            current_profile=Profile.objects.filter(user=request.user).first()
-            text_data = request.POST.get("text_data")
-            image_data = request.FILES.get("image_data")
-            Post.objects.create(my_post=image_data,post_by=request.user,poster_profile=current_profile,about=text_data)
-            return JsonResponse({"message":"Success done"},status=200)    
-    except (InvalidToken, TokenError) as e:
-        return JsonResponse({"error": "Invalid token"}, status=401)    
+        print(request,"coming")
+        token = request.POST.get('token')
+        print(token,"coming token")
+        image = request.FILES.get('image')  # This will retrieve the uploaded image
+        print(image,"image coming ok set up try it")
+        access_token = AccessToken(token)
+        print(AccessToken,"tsis is acess ")
+        # Extract user ID from token
+        user_id = access_token['user_id']
+        
+        #This will through error if user linked to the token delete before 
+        user = CustomUser.objects.get(id=user_id)
+        current_profile=Profile.objects.filter(user=user).first()
+        print("image set up")
+        Post.objects.create(my_post=image,post_by=user,poster_profile=current_profile,about="new image set up")
+        print("image save")
 
+        return JsonResponse({"token_valid": True, "user_id": user.id}, status=200)
 
+    except :
+        return JsonResponse({"Error":"invalid token"}, status=401)
+    
+
+    

@@ -88,7 +88,8 @@ class Followerscount(models.Model):
         return self.user.email
     
 class Like_post(models.Model):
-    post_id=models.CharField(max_length=500)    
+    post_id=models.CharField(max_length=500)  
+    linked_post=models.ForeignKey(Post,on_delete=models.CASCADE)  
     like_user=models.ForeignKey(CustomUser,on_delete=models.CASCADE)
     like_time=models.DateField(default=datetime.now)
 
