@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from .models import Student,CustomUser,OTP,Profile,Followerscount,Like_post,Comment,Post
-from .serializers import Studentserializer
+from .serializers import Studentserializer,Commentserializer,Profileserializer
 from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse, JsonResponse
 from rest_framework.renderers import JSONRenderer
@@ -358,26 +358,36 @@ def view_profile(request,name):
     return JsonResponse(context,status=200)
 
 
-
+@csrf_exempt
 def Follow(request):
-    jwt_auth = JWTAuthentication()
+    data = JSONParser().parse(request)  # Parse the JSON body
+    token= data.get("token")
+    another_id= data.get("another_id")
+    if not token or not another_id:
+        return JsonResponse({"token_valid": "Token is missing"}, status=400)
+    #token = request.GET['token']
     try:
-        # This will check the Authorization header and validate the token
-        user, token = jwt_auth.authenticate(request)
-        if not user:
-            return JsonResponse({"error": "Authentication required"}, status=401)
-        user_id=request.GET.get('myuser')
-        user=CustomUser.objects.filter(id=user_id).first()
-        user_profile=Profile.objects.filter(user=user).first()
-        #user_name=user_profile.name
-        follower_exist=Followerscount.objects.filter(follower=user,user=user).first()
+        access_token = AccessToken(token)
+        # Extract user ID from token
+        user_id = access_token['user_id']
+        
+        #This will through error if user linked to the token delete before 
+        current_user = CustomUser.objects.get(id=user_id)
+        another_user = CustomUser.objects.get(id=another_id)
+        user_profile=Profile.objects.filter(user=another_user).first()
+        
+        follower_exist=Followerscount.objects.filter(follower=current_user,user=another_user).first()
+        
         if follower_exist:   
             follower_exist.delete()
+            user_profile.no_of_followers-=1
         else:
-            Followerscount.objects.create(follower=user,user=user)
-            
-        return JsonResponse({"sucess":"Follower updated"}, status=201)
-    except (InvalidToken, TokenError) as e:
+            Followerscount.objects.create(follower=current_user,user=another_user)
+            user_profile.no_of_followers+=1
+        
+        user_profile.save()    
+        return JsonResponse({"sucess":user_profile.no_of_followers}, status=201)
+    except :
         return JsonResponse({"error": "Invalid token"}, status=401)    
 
 @csrf_exempt
@@ -417,7 +427,7 @@ def like_check(request):
 
 #Add comments  
 @csrf_exempt  
-def Showcomment(request,post_id):
+def Showcomment(request):
     data = JSONParser().parse(request)  # Parse the JSON body
     token= data.get("token")
     post_id= data.get("post_id")
@@ -433,12 +443,14 @@ def Showcomment(request,post_id):
         
         current_post=Post.objects.filter(id=post_id).first()
         allcomments=Comment.objects.filter(comment_post=current_post)
+        allcommentserializer=Commentserializer(allcomments, many=True)
         recent_user=Profile.objects.filter(user=user).first()
+        userserializers=Profileserializer(recent_user) 
+        
         context={
-        'user':user,
-        'allcomments':allcomments,
+        'allcomments':allcommentserializer.data,
         'post_id':post_id,
-        'recent_user':recent_user
+        'recent_user':userserializers.data
         }
         return JsonResponse(context, status=201)
     except:

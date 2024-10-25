@@ -10,35 +10,35 @@ class Studentserializer(serializers.ModelSerializer):
 class OTPserializer(serializers.ModelSerializer):
     class Meta:
         model=OTP
-        fields=all
+        fields='__all__'
 
 class Profileserializer(serializers.ModelSerializer):
     class Meta:
         model=Profile
-        fields=all
+        fields = '__all__'
 
 class Postserializer(serializers.ModelSerializer):
     class Meta:
         model=Post
-        fields=all                
+        fields = '__all__'                
 
 class Followerscountserializer(serializers.ModelSerializer):
     class Meta:
         model=Followerscount
-        fields=all
+        fields = '__all__'
 
 class Like_postserializer(serializers.ModelSerializer):
     class Meta:
         model=Like_post
-        fields=all
+        fields = '__all__'
    
 class Commentserializer(serializers.ModelSerializer):
     class Meta:
         model=Comment
-        fields=all
+        fields = '__all__'
 
 class CustomUserserializer(serializers.ModelSerializer):
     class Meta:
         model=CustomUser
-        fields=all
+        fields = '__all__'
                                 
