@@ -380,6 +380,7 @@ def Follow(request):
     except (InvalidToken, TokenError) as e:
         return JsonResponse({"error": "Invalid token"}, status=401)    
 
+@csrf_exempt
 def like_check(request):
     print("start")
     data = JSONParser().parse(request)  # Parse the JSON body
@@ -408,6 +409,7 @@ def like_check(request):
         data = {
             'likes': current_post.no_of_like
         }
+        print("sucess done")
         return JsonResponse(data,status=200)
     except:
         return JsonResponse({"Error":"invalid token"}, status=401)
@@ -439,26 +441,31 @@ def Showcomment(request,post_id):
 
 #create comment
 def Createcomment(request):
-    jwt_auth = JWTAuthentication()
-
+    data = JSONParser().parse(request)  # Parse the JSON body
+    token= data.get("token")
+    comment= data.get("comment")
+    post_id= data.get("id")
+    if not token or not comment or not post_id:
+        return JsonResponse({"token_valid": "Token is missing"}, status=400)
+    
     try:
-        # This will check the Authorization header and validate the token
-        user, token = jwt_auth.authenticate(request)
-        if not user:
-            return JsonResponse({"error": "Authentication required"}, status=401)
-        if request.method=="POST":
-            comment=request.POST['comment']
-            post_id=request.POST['id']
-            user=request.user
-            user_profile=Profile.objects.filter(user=user).first()
-            current_post=Post.objects.filter(id=post_id).first()
-            Comment.objects.create(text=comment,comment_by=user_profile,comment_post=current_post)
-            current_post.no_of_coment+=1
-            user_profile.comment_by_user+=1
-            current_post.save()
-            user_profile.save()
-            return JsonResponse({'success': True}, status=201) 
-    except (InvalidToken, TokenError) as e:
+        access_token = AccessToken(token)
+        # Extract user ID from token
+        user_id = access_token['user_id']
+        
+        #This will through error if user linked to the token delete before 
+        user = CustomUser.objects.get(id=user_id)
+        user_profile=Profile.objects.filter(user=user).first()
+        current_post=Post.objects.filter(id=post_id).first()
+        Comment.objects.create(text=comment,comment_by=user_profile,comment_post=current_post)
+        current_post.no_of_coment+=1
+        user_profile.comment_by_user+=1
+        current_post.save()
+        user_profile.save()
+        print("done")
+        return JsonResponse({'success': True}, status=201) 
+    
+    except:
         return JsonResponse({"error": "Invalid token"}, status=401)    
 
     
