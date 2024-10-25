@@ -22,7 +22,7 @@ const FormData = require('form-data');
 
 async function send(){
   try{
-    const response=await axios.post('http://127.0.0.1:8000/like/',{token:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzI5ODM4MTI0LCJpYXQiOjE3Mjk0MjgwNzgsImp0aSI6ImQyZjBhYWQ2NDgwZTQ5MGE4MmNjNjRiNzk1Y2Q4ZmFmIiwidXNlcl9pZCI6N30.DF3bbR7uigqny5tGVK0A9KxW-ftC-j-DcS7DvuSVGVk",like_id:"51e145a7-afd6-44ae-bdb4-ce75c1cdc721"})
+    const response=await axios.post('http://127.0.0.1:8000/createcomment/',{token:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzI5ODM4MTI0LCJpYXQiOjE3Mjk0MjgwNzgsImp0aSI6ImQyZjBhYWQ2NDgwZTQ5MGE4MmNjNjRiNzk1Y2Q4ZmFmIiwidXNlcl9pZCI6N30.DF3bbR7uigqny5tGVK0A9KxW-ftC-j-DcS7DvuSVGVk",id:"1a48b534-56f3-4f7d-9619-fc2831047518",comment:"scommentonit"})
     console.log(response.status,"comes",response.data)
   }
   catch(error) {

@@ -440,6 +440,7 @@ def Showcomment(request,post_id):
         return JsonResponse({"error": "Invalid token"}, status=401)
 
 #create comment
+@csrf_exempt
 def Createcomment(request):
     data = JSONParser().parse(request)  # Parse the JSON body
     token= data.get("token")
