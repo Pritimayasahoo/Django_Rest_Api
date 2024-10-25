@@ -415,20 +415,25 @@ def like_check(request):
         return JsonResponse({"Error":"invalid token"}, status=401)
   
 
-#Add comments    
+#Add comments  
+@csrf_exempt  
 def Showcomment(request,post_id):
-    jwt_auth = JWTAuthentication()
-
+    data = JSONParser().parse(request)  # Parse the JSON body
+    token= data.get("token")
+    post_id= data.get("post_id")
+    if not token or not post_id:
+        return JsonResponse({"token_valid": "Token is missing"}, status=400)
     try:
-        # This will check the Authorization header and validate the token
-        user, token = jwt_auth.authenticate(request)
-        if not user:
-            return JsonResponse({"error": "Authentication required"}, status=401)
-        user=request.user
+        access_token = AccessToken(token)
+        # Extract user ID from token
+        user_id = access_token['user_id']
+        
+        #This will through error if user linked to the token delete before 
+        user = CustomUser.objects.get(id=user_id)
+        
         current_post=Post.objects.filter(id=post_id).first()
         allcomments=Comment.objects.filter(comment_post=current_post)
         recent_user=Profile.objects.filter(user=user).first()
-        user=request.user
         context={
         'user':user,
         'allcomments':allcomments,
@@ -436,7 +441,7 @@ def Showcomment(request,post_id):
         'recent_user':recent_user
         }
         return JsonResponse(context, status=201)
-    except (InvalidToken, TokenError) as e:
+    except:
         return JsonResponse({"error": "Invalid token"}, status=401)
 
 #create comment
@@ -445,7 +450,7 @@ def Createcomment(request):
     data = JSONParser().parse(request)  # Parse the JSON body
     token= data.get("token")
     comment= data.get("comment")
-    post_id= data.get("id")
+    post_id= data.get("post_id")
     if not token or not comment or not post_id:
         return JsonResponse({"token_valid": "Token is missing"}, status=400)
     
