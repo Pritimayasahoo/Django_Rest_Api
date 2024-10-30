@@ -73,7 +73,7 @@ def signup_view(request):
                myotp.otp = otp
                myotp.save()
             else:
-               OTP.objects.create(otp=otp, email=email)
+               OTP.objects.create(OTP=otp, email=email)
                
             return JsonResponse({"sucess":"OTP sent"}, status=201)
 
