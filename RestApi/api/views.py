@@ -22,10 +22,34 @@ default_image = 'default.png'
 default_cover_image ='default_cover_img.png'
 
 def get_csrf_token(request):
+    print("comes")
     csrf_token = get_token(request)
+    print(csrf_token,"all are")
     return JsonResponse({'csrfToken': csrf_token})
 
 
+# OTP Template For Signup OTP
+def Signu_otp(name, email, otp):
+    url = "https://control.msg91.com/api/v5/email/send"
+    payload = {
+        'to': [{'name': name, 'email': email}],
+        'from': {'name': 'pritimaya', 'email': 'support@clasoc.com'},
+        'variables': {'name': name, 'OTP': otp},
+        'domain': 'clasoc.com',
+        'template_id': 'template_signup'
+    }
+    payload = json.dumps(payload)
+    headers = {
+        "Content-Type": "application/JSON",
+        "Accept": "application/json",
+        "authkey": "396373AC78f3NtG6492a1a7P1"
+    }
+    response = requests.post(url, data=payload, headers=headers)
+    if response.status_code == 200:
+        return True
+    else:
+        return False
+    
 @csrf_exempt
 def signup_view(request):
     if request.method == "POST":
@@ -45,6 +69,20 @@ def signup_view(request):
                 password=password  # Hash the password
             )
             otp=random.randint(100000,999999)
+            
+            if not Signu_otp("chiku", email, otp):
+                return JsonResponse({"error": "OTP can't be send"}, status=400)
+            
+            myotp = OTP.objects.filter(email=email).first()
+            if myotp:
+               myotp.otp = otp
+               myotp.save()
+            else:
+               OTP.objects.create(otp=otp, email=email)
+               
+            return JsonResponse({"sucess":"OTP sent"}, status=201)
+   
+            return redirect('/signup/')
             Profile.objects.create(user=user,id=user.id)
             OTP.objects.create(OTP=otp,email=email,user=user)
 
@@ -62,6 +100,37 @@ def signup_view(request):
             return JsonResponse({"error": "Invalid JSON"}, status=400)
 
     return HttpResponse(status=405)  # Method not allowed for non-POST requests
+
+
+# OTP Verification Logic During Signup Time
+@csrf_exempt
+def Signup_otp_check(request):
+    if request.method=='POST':
+        data = JSONParser().parse(request)  # Parse the JSON body
+        email = data.get("email")
+        otp = data.get("OTP")
+        password=data.get("password")
+        otp_object=OTP.objects.filter(email=email,otp=otp).first()
+        if otp_object:
+            # Create new user
+            user = CustomUser.objects.create_user(
+                email=email,
+                password=password  # Hash the password
+            )
+            
+            Profile.objects.create(user=user,id=user.id)
+
+            # Generate JWT tokens for the new user
+            refresh = RefreshToken.for_user(user)
+
+            response_data = {
+                'refresh': str(refresh),
+                'access': str(refresh.access_token),
+            }
+
+            return JsonResponse(response_data, status=201)
+        return JsonResponse({"Error":"Wromg OTP"},status=400)
+
 
 @csrf_exempt
 def login_view(request):
@@ -221,12 +290,13 @@ def verify_token(request):
 #refresh token
 @csrf_exempt
 def refresh_token(request):
+    print("comes here")
     data = JSONParser().parse(request)  # Parse the JSON body
     refresh_token_str= data.get("refresh")
-
+     
     if not refresh_token_str:
         return JsonResponse({"detail": "Refresh token is missing"}, status=400)
-
+    print(refresh_token_str,"come")
     try:
         # Validate the refresh token
         refresh_token = RefreshToken(refresh_token_str)
@@ -283,28 +353,31 @@ def studentapi(request,pk):
             return JsonResponse(serializer.data)
         return JsonResponse(serializer.errors, status=400)
 
-
+@csrf_exempt
 def create_profile(request):
-    jwt_auth = JWTAuthentication()
+    #jwt_auth = JWTAuthentication()
     try:
-        user, token = jwt_auth.authenticate(request)
-        if not user:
-            return JsonResponse({"error": "Authentication required"}, status=401)
         if request.method=='POST':
-            myprofile=Profile.objects.filter(user=request.user).first()
-            #get the profile image
+            print(request,"coming")
+            token = request.POST.get('token')
+            print(token,"coming token")
+            access_token = AccessToken(token)
+            # Extract user ID from token
+            user_id = access_token['user_id']
+            user = CustomUser.objects.get(id=user_id)
+            print(user,"up to here")
+            myprofile=Profile.objects.get(user=user)
             if request.FILES.get('profile_image'):
                 profile_image=request.FILES.get('profile_image')
             else:
                 profile_image = default_image
-
-            #get the cover image  
+            
             if request.FILES.get('cover_image'):
                 cover_image=request.FILES.get('cover_image')
                 print(cover_image)
             else:
-                cover_image = default_cover_image
-
+                cover_image = default_cover_image    
+            
             name=request.POST['name']  
             about=request.POST['about']
             school=request.POST['school']
@@ -316,21 +389,22 @@ def create_profile(request):
             myprofile.about=about
             myprofile.current_study=school
             myprofile.save()
-            return JsonResponse({"message":"Success done"},status=201)
+            return JsonResponse({"message":"Success done"},status=201)    
         
         #if user wants to edit his profile he will come here
-        else:
-            myprofile=Profile.objects.filter(user=request.user).first()
-            name=myprofile.name
-            about=myprofile.about
-            school=myprofile.current_study
-            context={
-                'name':name,
-                'about':about,
-                'school':school
-            }
-            return JsonResponse({"userdata":context},200)
-    except (InvalidToken, TokenError) as e:
+        elif request.method=='GET':
+            print("coming")
+            token= request.GET.get('token')
+            access_token = AccessToken(token)
+            print("acess heeee")
+            user_id = access_token['user_id']
+            user = CustomUser.objects.get(id=user_id)
+            print("nice",user)
+            myprofile=Profile.objects.get(user=user)
+            userprofileserializer=Profileserializer(myprofile)
+            return JsonResponse({'Sucess':userprofileserializer.data}, status=200)
+    except Exception as e:
+        print(e,"this is issue here")
         return JsonResponse({"error": "Invalid token"}, status=401)    
         
 
@@ -358,8 +432,9 @@ def view_profile(request,name):
     return JsonResponse(context,status=200)
 
 
-@csrf_exempt
+#@csrf_exempt
 def Follow(request):
+    print("here")
     data = JSONParser().parse(request)  # Parse the JSON body
     token= data.get("token")
     another_id= data.get("another_id")
@@ -367,14 +442,18 @@ def Follow(request):
         return JsonResponse({"token_valid": "Token is missing"}, status=400)
     #token = request.GET['token']
     try:
+        print("reach to")
         access_token = AccessToken(token)
+        print("valida")
         # Extract user ID from token
         user_id = access_token['user_id']
         
         #This will through error if user linked to the token delete before 
         current_user = CustomUser.objects.get(id=user_id)
+        print(current_user,"get here",another_id)
         another_user = CustomUser.objects.get(id=another_id)
-        user_profile=Profile.objects.filter(user=another_user).first()
+        print(another_user,"after that")
+        user_profile=Profile.objects.get(user=another_user)
         
         follower_exist=Followerscount.objects.filter(follower=current_user,user=another_user).first()
         
@@ -386,8 +465,9 @@ def Follow(request):
             user_profile.no_of_followers+=1
         
         user_profile.save()    
-        return JsonResponse({"sucess":user_profile.no_of_followers}, status=201)
-    except :
+        return JsonResponse({"sucess":"ok"}, status=201)
+    except Exception as e:
+        print(e,"this is main issue")
         return JsonResponse({"error": "Invalid token"}, status=401)    
 
 @csrf_exempt

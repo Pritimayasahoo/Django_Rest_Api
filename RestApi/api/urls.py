@@ -4,9 +4,10 @@ from rest_framework_simplejwt.views import TokenRefreshView,TokenVerifyView
 
 
 urlpatterns = [
-    path('csrf/',views.get_csrf_token),
+    path('get-csrf-token/', views.get_csrf_token, name='get_csrf_token'),
     path('student/<int:pk>',views.studentapi) ,
     path('signup/',views.signup_view, name='signup'),
+    path('signupotpcheck/',views.Signup_otp_check, name='signupotp'),
     path('token/refresh/',views.refresh_token, name='token_refresh'),
     path('token/verify/',views.verify_token, name='token_verify'),
     path('login/',views.login_view, name='login'),
