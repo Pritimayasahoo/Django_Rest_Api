@@ -88,20 +88,26 @@ def signup_view(request):
 @csrf_exempt
 def Signup_otp_check(request):
     if request.method=='POST':
+        print("1st comes")
         data = JSONParser().parse(request)  # Parse the JSON body
         email = data.get("email")
         otp = data.get("OTP")
         password=data.get("password")
+        print(email,otp,password,"all data for verify")
         otp_object=OTP.objects.filter(email=email,OTP=otp).first()
+        print(otp_object,"1 exist")
         if otp_object:
+            print(otp_object,"get 1 obj")
             # Create new user
             user = CustomUser.objects.create_user(
                 email=email,
                 password=password  # Hash the password
             )
-            
+            otp_object.user=user
+            otp_object.save()
+            print(user,"done 1")
             Profile.objects.create(user=user,id=user.id)
-
+            print("profile done")
             # Generate JWT tokens for the new user
             refresh = RefreshToken.for_user(user)
 
