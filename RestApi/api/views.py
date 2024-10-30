@@ -63,11 +63,6 @@ def signup_view(request):
             if CustomUser.objects.filter(email=email).exists():
                 return JsonResponse({"error": "User already exists"}, status=400)
 
-            # Create new user
-            user = CustomUser.objects.create_user(
-                email=email,
-                password=password  # Hash the password
-            )
             otp=random.randint(100000,999999)
             
             if not Signu_otp("chiku", email, otp):
@@ -81,20 +76,7 @@ def signup_view(request):
                OTP.objects.create(otp=otp, email=email)
                
             return JsonResponse({"sucess":"OTP sent"}, status=201)
-   
-            return redirect('/signup/')
-            Profile.objects.create(user=user,id=user.id)
-            OTP.objects.create(OTP=otp,email=email,user=user)
 
-            # Generate JWT tokens for the new user
-            refresh = RefreshToken.for_user(user)
-
-            response_data = {
-                'refresh': str(refresh),
-                'access': str(refresh.access_token),
-            }
-
-            return JsonResponse(response_data, status=201)
 
         except:
             return JsonResponse({"error": "Invalid JSON"}, status=400)
