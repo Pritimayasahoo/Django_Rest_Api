@@ -92,7 +92,7 @@ def Signup_otp_check(request):
         email = data.get("email")
         otp = data.get("OTP")
         password=data.get("password")
-        otp_object=OTP.objects.filter(email=email,otp=otp).first()
+        otp_object=OTP.objects.filter(email=email,OTP=otp).first()
         if otp_object:
             # Create new user
             user = CustomUser.objects.create_user(
